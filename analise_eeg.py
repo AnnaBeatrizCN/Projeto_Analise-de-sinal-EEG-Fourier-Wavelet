@@ -246,7 +246,6 @@ class TelaResultadosUI(ctk.CTkFrame):
 
             nova.save(caminho_png, format="PNG")
         except Exception as e:
-            # Se der ruim, não quebrar o fluxo de salvamento
             print(f"Falha ao gravar legenda em {caminho_png}: {e}")
 
     # -----------------------------------------
@@ -531,7 +530,7 @@ class TelaResultadosUI(ctk.CTkFrame):
         all_ctrl_tbr = self.resultados_analise_obj['tbr_por_grupo'].get('F-Ctrl', []) + self.resultados_analise_obj['tbr_por_grupo'].get('M-Ctrl', [])
         all_ctrl_sinais = self.dados_eeg_carregados.get('F-Ctrl', []) + self.dados_eeg_carregados.get('M-Ctrl', [])
         
-        if not all_adhd_sinais or not all_ctrl_sinais: return # Sem dados, sai
+        if not all_adhd_sinais or not all_ctrl_sinais: return 
 
         idx_adhd = np.argmax(all_adhd_tbr) if self.var_tbr_adhd_indiv.get() == "TBR Mais Alto" else np.argmin(all_adhd_tbr)
         idx_ctrl = np.argmax(all_ctrl_tbr) if self.var_tbr_ctrl_indiv.get() == "TBR Mais Alto" else np.argmin(all_ctrl_tbr)
@@ -615,33 +614,24 @@ class TelaResultadosUI(ctk.CTkFrame):
             ctk.CTkLabel(self.frame_plots_sliding_tab, text="Sem dados para esta seleção.",
                          text_color=CORES["text_dark"], font=ctk.CTkFont(size=14)).pack(pady=50)
 
-    # --- SALVAR GRÁFICOS ---
+    # -------- Função Para Salvar os Gráficos Feitos ----------
     def salvar_todos_graficos(self):
         """Salva todos os gráficos gerados com nome numerado e rótulo, e adiciona descrição no PNG."""
         caminho_pasta = filedialog.askdirectory(title="Selecione a pasta para salvar os gráficos")
         if not caminho_pasta:
             messagebox.showinfo("Cancelado", "Operação de salvar cancelada.")
             return
-
         try:
             if not self.lista_de_figs:
                 messagebox.showerror("Erro ao Salvar", "Nenhum gráfico gerado para salvar.")
                 return
-
             for i, item in enumerate(self.lista_de_figs, start=1):
                 fig = item['fig']
                 label = item.get('label', f"Grafico{i:02d}")
                 desc = item.get('desc', '')
-
                 nome_arquivo = f"{i:02d}_{label}.png"
                 path_completo = os.path.join(caminho_pasta, nome_arquivo)
-
-                # Salva figura em alta qualidade
                 fig.savefig(path_completo, dpi=300)
-                # Acrescenta legenda com descrição
-                if desc:
-                    self._gravar_legenda_em_png(path_completo, desc)
-
             messagebox.showinfo("Sucesso", f"Todos os gráficos foram salvos na pasta:\n{caminho_pasta}")
 
         except Exception as e:
@@ -652,3 +642,4 @@ class TelaResultadosUI(ctk.CTkFrame):
 if __name__ == "__main__":
     app = AppEEG()
     app.mainloop()
+
