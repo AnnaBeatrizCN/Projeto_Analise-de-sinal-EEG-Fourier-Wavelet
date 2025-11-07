@@ -66,10 +66,10 @@ def analise_cwt_sinal(sinal, fs_hz, wavelet_tipo='cmor1.5-1.0'):
 
 """Calcula espectrograma do sinal"""
 def calc_espectrograma(sinal, fs_hz):
-    n_per_seg = fs_hz               # 1 seg de janela
-    n_overlap = fs_hz // 2          # 50% de sobreposição
+    n_per_seg = fs_hz         # 1 seg de janela
+    n_overlap = fs_hz // 2        # 50% de sobreposição
     freqs, tempos, Sxx = spectrogram(sinal, fs=fs_hz, window='hann',
-                                     nperseg=n_per_seg, noverlap=n_overlap, scaling='density')
+                                      nperseg=n_per_seg, noverlap=n_overlap, scaling='density')
     return freqs, tempos, Sxx
 
 # --- UI App (CustomTkinter) ---
@@ -172,7 +172,6 @@ class TelaResultadosUI(ctk.CTkFrame):
         self.dados_eeg_carregados = {}
         self.resultados_analise_obj = {}
 
-        # Agora armazenamos dicionários: {'fig': fig, 'label': '...', 'desc': '...'}
         self.lista_de_figs = []
 
         self.scrollable_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
@@ -181,12 +180,12 @@ class TelaResultadosUI(ctk.CTkFrame):
         header_frm = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
         header_frm.pack(fill="x", padx=10, pady=10)
         btn_voltar = ctk.CTkButton(header_frm, text="← Voltar", command=lambda: ctrl.mostrar_tela("Tela_Inicial"),
-                                   fg_color="transparent", text_color=CORES["prune"], hover_color=CORES["rosa"], width=50)
+                                     fg_color="transparent", text_color=CORES["prune"], hover_color=CORES["rosa"], width=50)
         btn_voltar.pack(side="left")
         ctk.CTkLabel(header_frm, text="Resultados", font=ctk.CTkFont(size=20, weight="bold"), text_color=CORES["text_dark"]).pack(side="left", expand=True)
 
         btn_salvar_graficos = ctk.CTkButton(header_frm, text="💾 Salvar Gráficos", command=self.salvar_todos_graficos,
-                                          fg_color=CORES["mauve"], text_color=CORES["blush"], hover_color=CORES["prune"])
+                                              fg_color=CORES["mauve"], text_color=CORES["blush"], hover_color=CORES["prune"])
         btn_salvar_graficos.pack(side="right", padx=10)
 
         self.tab_view_res = ctk.CTkTabview(self.scrollable_frame, fg_color=CORES["rosa"])
@@ -280,9 +279,8 @@ class TelaResultadosUI(ctk.CTkFrame):
     def _estilo_grafico_padrao(self, ax_obj, fig_obj, titulo_str):
         fig_obj.patch.set_facecolor('white')
         ax_obj.set_facecolor('white')
-        ax_obj.set_title(titulo_str, color=CORES["text_dark"], fontsize=15, weight="bold")
-    
-        ax_obj.tick_params(axis='both', colors=CORES["text_dark"],labelsize=10)
+        ax_obj.set_title(titulo_str, color=CORES["text_dark"], fontsize=20, weight="bold")
+        ax_obj.tick_params(axis='both', colors=CORES["text_dark"],labelsize=13)
     
         ax_obj.xaxis.label.set_color('black')
         ax_obj.yaxis.label.set_color('black')
@@ -291,11 +289,12 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_obj.grid(True, linestyle='--', color='gray', alpha=0.5) 
         return ax_obj
 
+   
     def _plot_comp_grupos_tbr_fig(self, figsize=(5, 5), fontsize_adj=0):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         tbr_data = self.resultados_analise_obj['tbr_por_grupo']
         data_plot = [tbr_data['F-TDAH'], tbr_data['F-Ctrl'], tbr_data['M-TDAH'], tbr_data['M-Ctrl']]
-        labels = ['TDAH (F)', 'Controle (F)', 'TDAH (M)', 'Controle (M)']
+        labels = ['TDAH (F)', 'controle (F)', 'TDAH (M)', 'controle (M)']
         
         box = ax.boxplot(data_plot, labels=labels, patch_artist=True, widths=0.5)
         cores_box = [CORES["mauve"], CORES["prune"], CORES["mauve"], CORES["prune"]]
@@ -303,58 +302,76 @@ class TelaResultadosUI(ctk.CTkFrame):
         for median in box['medians']: median.set(color=CORES['amarelo'], linewidth=2)
         
         self._estilo_grafico_padrao(ax, fig, "TBR por Grupo")
-        ax.set_ylabel("TBR")
+        ax.set_ylabel("TBR", fontsize=15)
         
         leg_txt = ('LEGENDA:\n' '● Amarela: Mediana\n' '■ Caixa: 50% dos dados\n' '─ Linhas: Min/Max\n' '○ Círculos: Outliers')
         props = dict(boxstyle='round,pad=0.5', facecolor=CORES["blush"], alpha=0.95, edgecolor=CORES["prune"])
-        ax.text(0.03, 0.97, leg_txt, transform=ax.transAxes, fontsize=9+fontsize_adj, verticalalignment='top', horizontalalignment='left', bbox=props, color=CORES["text_dark"])
+        ax.text(0.03, 0.97, leg_txt, transform=ax.transAxes, fontsize=12+fontsize_adj, verticalalignment='top', horizontalalignment='left', bbox=props, color=CORES["text_dark"])
         fig.tight_layout()
         return fig, ax
 
-    def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(10, 3.5), fontsize_adj=0):
+   
+    def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(13, 4.5), fontsize_adj=0):
         # Gera a figura do Wavelet
         fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize)
 
         pow_a, freqs_a, temps_a = analise_cwt_sinal(sinal_adhd, FS_AMOSTRA)
-        im_a = ax_wav_adhd.contourf(temps_a, freqs_a, pow_a, levels=20, cmap='viridis')
+        pow_c, freqs_c, temps_c = analise_cwt_sinal(sinal_ctrl, FS_AMOSTRA)
+        
+        #Calcula os valores minimos e máximos para colocar como escala
+        escala_min_wav = min(np.min(pow_a), np.min(pow_c))
+        escala_max_wav = max(np.max(pow_a), np.max(pow_c))
+        
+        # Criar o array de níveis compartilhado
+        niveis_compartilhados_wav = np.linspace(escala_min_wav, escala_max_wav, 20)
+
+        im_a = ax_wav_adhd.contourf(temps_a, freqs_a, pow_a, levels=niveis_compartilhados_wav, cmap='viridis')
         self._estilo_grafico_padrao(ax_wav_adhd, fig_wav, f"Wavelet TDAH ({self.var_tbr_adhd_indiv.get()})")
         barra_wav_a = fig_wav.colorbar(im_a, ax=ax_wav_adhd)
-        ax_wav_adhd.set_xlabel("Tempo (s)", fontsize=12)
-        ax_wav_adhd.set_ylabel("Frequência (Hz)", fontsize=12)
-        barra_wav_a.ax.tick_params(labelsize=10)
+        ax_wav_adhd.set_xlabel("Tempo (s)", fontsize=15)
+        ax_wav_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
+        barra_wav_a.ax.tick_params(labelsize=14)
 
-        pow_c, freqs_c, temps_c = analise_cwt_sinal(sinal_ctrl, FS_AMOSTRA)
-        im_c = ax_wav_ctrl.contourf(temps_c, freqs_c, pow_c, levels=20, cmap='viridis')
-        self._estilo_grafico_padrao(ax_wav_ctrl, fig_wav, f"Wavelet Controle ({self.var_tbr_ctrl_indiv.get()})")
+        im_c = ax_wav_ctrl.contourf(temps_c, freqs_c, pow_c, levels=niveis_compartilhados_wav, cmap='viridis')
+        self._estilo_grafico_padrao(ax_wav_ctrl, fig_wav, f"Wavelet controle ({self.var_tbr_ctrl_indiv.get()})")
         barra_wav_c = fig_wav.colorbar(im_c, ax=ax_wav_ctrl)
         fig_wav.tight_layout()
-        ax_wav_ctrl.set_xlabel("Tempo (s)", fontsize=12)
-        ax_wav_ctrl.set_ylabel("Frequência (Hz)", fontsize=12)
-        barra_wav_c.ax.tick_params(labelsize=10)
+        
+        ax_wav_ctrl.set_xlabel("Tempo (s)", fontsize=15)
+        ax_wav_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
+        barra_wav_c.ax.tick_params(labelsize=14)
 
         # Gera a figura do Espectrograma
         fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize)
         
         freqs_sa, temps_sa, Sxx_a = calc_espectrograma(sinal_adhd, FS_AMOSTRA)
-        im_sa = ax_spec_adhd.pcolormesh(temps_sa, freqs_sa, 10*np.log10(Sxx_a), shading='gouraud', cmap='viridis')
+        freqs_sc, temps_sc, Sxx_c = calc_espectrograma(sinal_ctrl, FS_AMOSTRA)
+        
+        dados_db_a = 10 * np.log10(Sxx_a)
+        dados_db_c = 10 * np.log10(Sxx_c)
+        escala_min_spec = min(np.min(dados_db_a), np.min(dados_db_c))
+        escala_max_spec = max(np.max(dados_db_a), np.max(dados_db_c))
+        
+        im_sa = ax_spec_adhd.pcolormesh(temps_sa, freqs_sa, dados_db_a, shading='gouraud', cmap='viridis', vmin=escala_min_spec, vmax=escala_max_spec)
         self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectrograma TDAH ({self.var_tbr_adhd_indiv.get()})")
         barra_espectograma_a = fig_spec.colorbar(im_sa, ax=ax_spec_adhd)
-        ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=12)
-        ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=12)
-        barra_espectograma_a.ax.tick_params(labelsize=10)
         
-        freqs_sc, temps_sc, Sxx_c = calc_espectrograma(sinal_ctrl, FS_AMOSTRA)
-        im_sc = ax_spec_ctrl.pcolormesh(temps_sc, freqs_sc, 10*np.log10(Sxx_c), shading='gouraud', cmap='viridis')
-        self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectrograma Controle ({self.var_tbr_ctrl_indiv.get()})")
+        ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=15)
+        ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
+        barra_espectograma_a.ax.tick_params(labelsize=14)
+        
+        im_sc = ax_spec_ctrl.pcolormesh(temps_sc, freqs_sc, dados_db_c, shading='gouraud', cmap='viridis', vmin=escala_min_spec, vmax=escala_max_spec)
+        self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectrograma controle ({self.var_tbr_ctrl_indiv.get()})")
         barra_espectograma_c = fig_spec.colorbar(im_sc, ax=ax_spec_ctrl)
         fig_spec.tight_layout()
-        ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=12)
-        ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=12)
-        barra_espectograma_c.ax.tick_params(labelsize=10)
+        
+        ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=15)
+        ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
+        barra_espectograma_c.ax.tick_params(labelsize=14)
 
         return fig_wav, fig_spec
 
-    def _plot_media_espectro_fig(self, modo_gen, figsize=(10, 3.5), fontsize_adj=0):
+    def _plot_media_espectro_fig(self, modo_gen, figsize=(13, 4.5), fontsize_adj=0):
         fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize)
         sinais_adhd, sinais_ctrl = [], []
 
@@ -368,41 +385,67 @@ class TelaResultadosUI(ctk.CTkFrame):
             sinais_adhd = self.dados_eeg_carregados.get('M-TDAH', [])
             sinais_ctrl = self.dados_eeg_carregados.get('M-Ctrl', [])
 
+        # Inicializa variáveis para armazenamento dos dados processados
+        avg_sxx_adhd, freqs_adhd, temps_adhd = None, None, None
+        avg_sxx_ctrl, freqs_ctrl, temps_ctrl = None, None, None
+
         if sinais_adhd:
             min_len_adhd = min(s.shape[1] for s in sinais_adhd)
             all_sxx_adhd = [calc_espectrograma(s[0, :min_len_adhd], FS_AMOSTRA)[2] for s in sinais_adhd]
             avg_sxx_adhd = np.mean(all_sxx_adhd, axis=0)
-            
             freqs_adhd, temps_adhd, _ = calc_espectrograma(sinais_adhd[0][0, :min_len_adhd], FS_AMOSTRA)
             
-            im_adhd = ax_spec_adhd.pcolormesh(temps_adhd, freqs_adhd, 10 * np.log10(avg_sxx_adhd), shading='gouraud', cmap='viridis')
-            self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectro Médio TDAH ({modo_gen})")
-            ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=12)
-            ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=12)
-            fig_spec.colorbar(im_adhd, ax=ax_spec_adhd).ax.tick_params(labelsize=10)
-        else:
-            self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectro Médio TDAH ({modo_gen})")
-            ax_spec_adhd.text(0.5, 0.5, "Sem dados.", horizontalalignment='center', verticalalignment='center', transform=ax_spec_adhd.transAxes, color=CORES["text_dark"])
-        
         if sinais_ctrl:
             min_len_ctrl = min(s.shape[1] for s in sinais_ctrl)
             all_sxx_ctrl = [calc_espectrograma(s[0, :min_len_ctrl], FS_AMOSTRA)[2] for s in sinais_ctrl]
             avg_sxx_ctrl = np.mean(all_sxx_ctrl, axis=0)
-            
             freqs_ctrl, temps_ctrl, _ = calc_espectrograma(sinais_ctrl[0][0, :min_len_ctrl], FS_AMOSTRA)
-            
-            im_ctrl = ax_spec_ctrl.pcolormesh(temps_ctrl, freqs_ctrl, 10 * np.log10(avg_sxx_ctrl), shading='gouraud', cmap='viridis')
-            self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectro Médio Ctrl ({modo_gen})")
-            ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=12)
-            ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=12)
-            fig_spec.colorbar(im_ctrl, ax=ax_spec_ctrl).ax.tick_params(labelsize=10)
+
+        dados_db_adhd = 10 * np.log10(avg_sxx_adhd) if avg_sxx_adhd is not None else None
+        dados_db_ctrl = 10 * np.log10(avg_sxx_ctrl) if avg_sxx_ctrl is not None else None
+
+        # Coleta dados válidos para encontrar limites
+        dados_validos = []
+        if dados_db_adhd is not None:
+            dados_validos.append(dados_db_adhd)
+        if dados_db_ctrl is not None:
+            dados_validos.append(dados_db_ctrl)
+
+        if dados_validos:
+            # Usar nanmin/nanmax para ignorar possíveis -inf de log(0)
+            escala_min_spec = np.nanmin([np.nanmin(d) for d in dados_validos if np.size(d) > 0])
+            escala_max_spec = np.nanmax([np.nanmax(d) for d in dados_validos if np.size(d) > 0])
         else:
-            self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectro Médio Ctrl ({modo_gen})")
+            escala_min_spec, escala_max_spec = 0, 1 # Fallback se não houver dados
+
+        # Plotar TDAH
+        if dados_db_adhd is not None:
+            im_adhd = ax_spec_adhd.pcolormesh(temps_adhd, freqs_adhd, dados_db_adhd, shading='gouraud', cmap='viridis', vmin=escala_min_spec, vmax=escala_max_spec)
+            self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectro médio TDAH ({modo_gen})")
+            
+            ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=15)
+            ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
+            fig_spec.colorbar(im_adhd, ax=ax_spec_adhd).ax.tick_params(labelsize=14)
+        else:
+            self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectro médio TDAH ({modo_gen})")
+            ax_spec_adhd.text(0.5, 0.5, "Sem dados.", horizontalalignment='center', verticalalignment='center', transform=ax_spec_adhd.transAxes, color=CORES["text_dark"])
+        
+        # Plotar controle
+        if dados_db_ctrl is not None:
+            im_ctrl = ax_spec_ctrl.pcolormesh(temps_ctrl, freqs_ctrl, dados_db_ctrl, shading='gouraud', cmap='viridis', vmin=escala_min_spec, vmax=escala_max_spec)
+            self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectro médio Ctrl ({modo_gen})")
+            
+            ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=15)
+            ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
+            fig_spec.colorbar(im_ctrl, ax=ax_spec_ctrl).ax.tick_params(labelsize=14)
+        else:
+            self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectro médio Ctrl ({modo_gen})")
             ax_spec_ctrl.text(0.5, 0.5, "Sem dados.", horizontalalignment='center', verticalalignment='center', transform=ax_spec_ctrl.transAxes, color=CORES["text_dark"])
 
         fig_spec.tight_layout()
         return fig_spec, (ax_spec_adhd, ax_spec_ctrl)
 
+   
     def _plot_sliding_mean_var_fig(self, modo_gen, modo_tbr_adhd, modo_tbr_ctrl, figsize=(14, 6), fontsize_adj=0):
         sinais_adhd_filtr, tbr_adhd_filtr = [], []
         sinais_ctrl_filtr, tbr_ctrl_filtr = [], []
@@ -433,7 +476,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         sinal_ctrl_sel = sinais_ctrl_filtr[idx_ctrl][0, :]
         
         fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True)
-        fig.subplots_adjust(top=0.9, bottom=0.1, left=0.08, right=0.98, hspace=0.4, wspace=0.3)
+        # Ajustando espaçamento para fontes maiores
+        fig.subplots_adjust(top=0.92, bottom=0.1, left=0.08, right=0.98, hspace=0.5, wspace=0.3)
 
         self._plot_sliding_mean_var_aux(axes[:, 0], sinal_adhd_sel, FS_AMOSTRA, f"TDAH ({modo_gen} - {modo_tbr_adhd})", fontsize_adj)
         self._plot_sliding_mean_var_aux(axes[:, 1], sinal_ctrl_sel, FS_AMOSTRA, f"Ctrl ({modo_gen} - {modo_tbr_ctrl})", fontsize_adj)
@@ -457,14 +501,16 @@ class TelaResultadosUI(ctk.CTkFrame):
         
         ax_mean.plot(time_pts, means, color=CORES["prune"])
         self._estilo_grafico_padrao(ax_mean, ax_mean.get_figure(), f"Média - {prefixo_titulo}")
-        ax_mean.set_ylabel("Média (µV)", fontsize=12)
-        ax_mean.tick_params(axis='both', colors=CORES["text_dark"], labelsize=10)
+        
+        ax_mean.set_ylabel("Média (µV)", fontsize=15)
+        ax_mean.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
 
         ax_var.plot(time_pts, vars, color=CORES["mauve"])
         self._estilo_grafico_padrao(ax_var, ax_var.get_figure(), f"Variância - {prefixo_titulo}")
-        ax_var.set_ylabel("Variância (µV²)", fontsize=12)
-        ax_var.set_xlabel("Tempo (s)", fontsize=12)
-        ax_var.tick_params(axis='both', colors=CORES["text_dark"], labelsize=10)
+        
+        ax_var.set_ylabel("Variância (µV²)", fontsize=15)
+        ax_var.set_xlabel("Tempo (s)", fontsize=15)
+        ax_var.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
 
     # --- MÉTODOS DE PLOTAGEM QUE UTILIZAM AS FIGURAS GERADAS ---
     def plotar_todos_os_grafs(self):
@@ -495,13 +541,13 @@ class TelaResultadosUI(ctk.CTkFrame):
         fig, _ = self._plot_comp_grupos_tbr_fig()
         self._mostrar_fig_no_frame(fig, self.tab_grupo_comp)
         # registrar com rótulo e descrição
-        desc = ("Boxplot da Razão Teta/Beta (TBR) por grupo: TDAH (F/M) e Controle (F/M). "
+        desc = ("Boxplot da Razão Teta/Beta (TBR) por grupo: TDAH (F/M) e controle (F/M). "
                 "Bandas: θ 4–8 Hz, β 13–30 Hz; fs=256 Hz. "
                 "TBR = potência θ / β; mediana em amarelo; caixas representam o IQR.")
         self._registrar_fig(fig, "Grupos", desc)
         
         ctk.CTkButton(self.tab_grupo_comp, text="💡 Entender TBR", corner_radius=10, fg_color=CORES["mauve"], text_color=CORES["blush"],
-                      command=lambda: messagebox.showinfo("TBR Insight", "Uma Razão Teta/Beta (TBR) mais alta no grupo TDAH é um biomarcador comum, sugerindo uma maturação cerebral mais lenta. A separação por gênero permite investigar se há diferenças neste padrão.")).pack(pady=10, padx=20)
+                        command=lambda: messagebox.showinfo("TBR Insight", "Uma Razão Teta/Beta (TBR) mais alta no grupo TDAH é um biomarcador comum, sugerindo uma maturação cerebral mais lenta. A separação por gênero permite investigar se há diferenças neste padrão.")).pack(pady=10, padx=20)
     
     def _setup_analise_indiv_ui(self):
         for widget in self.tab_indiv_analise.winfo_children(): widget.destroy()
@@ -542,9 +588,9 @@ class TelaResultadosUI(ctk.CTkFrame):
         
         # Registrar com rótulos e descrições
         desc_wav = (f"Análise Wavelet Contínua (CWT, cmor1.5-1.0) — TDAH ({self.var_tbr_adhd_indiv.get()}) vs "
-                    f"Controle ({self.var_tbr_ctrl_indiv.get()}). Potência |coef|^2; frequências 1–50 Hz; fs=256 Hz.")
+                    f"controle ({self.var_tbr_ctrl_indiv.get()}). Potência |coef|^2; frequências 1–50 Hz; fs=256 Hz.")
         desc_spec = (f"Espectrograma (janela Hann 1s, 50% overlap) — TDAH ({self.var_tbr_adhd_indiv.get()}) vs "
-                     f"Controle ({self.var_tbr_ctrl_indiv.get()}). Escala em dB; fs=256 Hz.")
+                     f"controle ({self.var_tbr_ctrl_indiv.get()}). Escala em dB; fs=256 Hz.")
         self._registrar_fig(fig_wav, "Indiv_Wavelet", desc_wav)
         self._registrar_fig(fig_spec, "Indiv_Espectrograma", desc_spec)
         
@@ -580,11 +626,11 @@ class TelaResultadosUI(ctk.CTkFrame):
 
         ctk.CTkLabel(ctrl_pnl, text="Caso TDAH:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
         ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_adhd_tbr, values=["TBR mais alto", "TBR mais baixo"],
-                                 command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
+                              command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
 
-        ctk.CTkLabel(ctrl_pnl, text="Caso Controle:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
+        ctk.CTkLabel(ctrl_pnl, text="Caso controle:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
         ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_ctrl_tbr, values=["TBR mais alto", "TBR mais baixo"],
-                                 command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
+                              command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
         
         self.sel_genero_sliding = ctk.CTkSegmentedButton(ctrl_pnl, values=["Geral", "Feminino", "Masculino"],
                                                          command=self.atualizar_plots_sliding, fg_color=CORES["mauve"],
@@ -612,7 +658,7 @@ class TelaResultadosUI(ctk.CTkFrame):
         else:
             for widget in self.frame_plots_sliding_tab.winfo_children(): widget.destroy()
             ctk.CTkLabel(self.frame_plots_sliding_tab, text="Sem dados para esta seleção.",
-                         text_color=CORES["text_dark"], font=ctk.CTkFont(size=14)).pack(pady=50)
+                           text_color=CORES["text_dark"], font=ctk.CTkFont(size=14)).pack(pady=50)
 
     # -------- Função Para Salvar os Gráficos Feitos ----------
     def salvar_todos_graficos(self):
@@ -631,7 +677,7 @@ class TelaResultadosUI(ctk.CTkFrame):
                 desc = item.get('desc', '')
                 nome_arquivo = f"{i:02d}_{label}.png"
                 path_completo = os.path.join(caminho_pasta, nome_arquivo)
-                fig.savefig(path_completo, dpi=300)
+                fig.savefig(path_completo, dpi=400)
             messagebox.showinfo("Sucesso", f"Todos os gráficos foram salvos na pasta:\n{caminho_pasta}")
 
         except Exception as e:
@@ -642,4 +688,3 @@ class TelaResultadosUI(ctk.CTkFrame):
 if __name__ == "__main__":
     app = AppEEG()
     app.mainloop()
-
