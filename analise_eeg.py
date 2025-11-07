@@ -196,8 +196,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         self.tab_medias_analise = self.tab_view_res.add("Análises Médias")
         self.tab_sliding_analise = self.tab_view_res.add("Média e Variância")
         
-        self.var_sliding_adhd_tbr = ctk.StringVar(value="TBR Mais Alto")
-        self.var_sliding_ctrl_tbr = ctk.StringVar(value="TBR Mais Baixo")
+        self.var_sliding_adhd_tbr = ctk.StringVar(value="TBR mais alto")
+        self.var_sliding_ctrl_tbr = ctk.StringVar(value="TBR mais baixo")
         self.var_sliding_gen_sel = ctk.StringVar(value="Geral")
 
         self.frame_plots_media_tab = None 
@@ -426,8 +426,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         if not sinais_adhd_filtr or not sinais_ctrl_filtr:
             return None, None # Retorna None se não houver dados
         
-        idx_adhd = np.argmax(tbr_adhd_filtr) if modo_tbr_adhd == "TBR Mais Alto" else np.argmin(tbr_adhd_filtr)
-        idx_ctrl = np.argmax(tbr_ctrl_filtr) if modo_tbr_ctrl == "TBR Mais Alto" else np.argmin(tbr_ctrl_filtr)
+        idx_adhd = np.argmax(tbr_adhd_filtr) if modo_tbr_adhd == "TBR mais alto" else np.argmin(tbr_adhd_filtr)
+        idx_ctrl = np.argmax(tbr_ctrl_filtr) if modo_tbr_ctrl == "TBR mais alto" else np.argmin(tbr_ctrl_filtr)
 
         sinal_adhd_sel = sinais_adhd_filtr[idx_adhd][0, :]
         sinal_ctrl_sel = sinais_ctrl_filtr[idx_ctrl][0, :]
@@ -509,12 +509,12 @@ class TelaResultadosUI(ctk.CTkFrame):
         ctrl_pnl.pack(fill="x", pady=10, padx=10)
         
         ctk.CTkLabel(ctrl_pnl, text="Caso TDAH:", text_color=CORES["text_dark"]).pack(side="left", padx=(10,5))
-        self.var_tbr_adhd_indiv = ctk.StringVar(value="TBR Mais Alto")
-        ctk.CTkComboBox(ctrl_pnl, variable=self.var_tbr_adhd_indiv, values=["TBR Mais Alto", "TBR Mais Baixo"]).pack(side="left", padx=5)
+        self.var_tbr_adhd_indiv = ctk.StringVar(value="TBR mais alto")
+        ctk.CTkComboBox(ctrl_pnl, variable=self.var_tbr_adhd_indiv, values=["TBR mais alto", "TBR mais baixo"]).pack(side="left", padx=5)
         
         ctk.CTkLabel(ctrl_pnl, text="Caso Ctrl:", text_color=CORES["text_dark"]).pack(side="left", padx=(20,5))
-        self.var_tbr_ctrl_indiv = ctk.StringVar(value="TBR Mais Baixo")
-        ctk.CTkComboBox(ctrl_pnl, variable=self.var_tbr_ctrl_indiv, values=["TBR Mais Alto", "TBR Mais Baixo"]).pack(side="left", padx=5)
+        self.var_tbr_ctrl_indiv = ctk.StringVar(value="TBR mais baixo")
+        ctk.CTkComboBox(ctrl_pnl, variable=self.var_tbr_ctrl_indiv, values=["TBR mais alto", "TBR mais baixo"]).pack(side="left", padx=5)
         
         ctk.CTkButton(ctrl_pnl, text="Atualizar", command=self.atualizar_plots_indiv).pack(side="right", padx=10)
         
@@ -532,8 +532,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         
         if not all_adhd_sinais or not all_ctrl_sinais: return 
 
-        idx_adhd = np.argmax(all_adhd_tbr) if self.var_tbr_adhd_indiv.get() == "TBR Mais Alto" else np.argmin(all_adhd_tbr)
-        idx_ctrl = np.argmax(all_ctrl_tbr) if self.var_tbr_ctrl_indiv.get() == "TBR Mais Alto" else np.argmin(all_ctrl_tbr)
+        idx_adhd = np.argmax(all_adhd_tbr) if self.var_tbr_adhd_indiv.get() == "TBR mais alto" else np.argmin(all_adhd_tbr)
+        idx_ctrl = np.argmax(all_ctrl_tbr) if self.var_tbr_ctrl_indiv.get() == "TBR mais alto" else np.argmin(all_ctrl_tbr)
         
         sinal_adhd = all_adhd_sinais[idx_adhd][0, :]
         sinal_ctrl = all_ctrl_sinais[idx_ctrl][0, :]
@@ -579,11 +579,11 @@ class TelaResultadosUI(ctk.CTkFrame):
         ctrl_pnl.pack(fill="x", pady=10, padx=10)
 
         ctk.CTkLabel(ctrl_pnl, text="Caso TDAH:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
-        ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_adhd_tbr, values=["TBR Mais Alto", "TBR Mais Baixo"],
+        ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_adhd_tbr, values=["TBR mais alto", "TBR mais baixo"],
                                  command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
 
         ctk.CTkLabel(ctrl_pnl, text="Caso Controle:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
-        ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_ctrl_tbr, values=["TBR Mais Alto", "TBR Mais Baixo"],
+        ctk.CTkComboBox(ctrl_pnl, variable=self.var_sliding_ctrl_tbr, values=["TBR mais alto", "TBR mais baixo"],
                                  command=lambda x: self.atualizar_plots_sliding()).pack(side="left", padx=5)
         
         self.sel_genero_sliding = ctk.CTkSegmentedButton(ctrl_pnl, values=["Geral", "Feminino", "Masculino"],
