@@ -289,7 +289,7 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_obj.grid(True, linestyle='--', color='gray', alpha=0.5) 
         return ax_obj
 
-   
+    
     def _plot_comp_grupos_tbr_fig(self, figsize=(5, 5), fontsize_adj=0):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         tbr_data = self.resultados_analise_obj['tbr_por_grupo']
@@ -310,7 +310,7 @@ class TelaResultadosUI(ctk.CTkFrame):
         fig.tight_layout()
         return fig, ax
 
-   
+    
     def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(13, 4.5), fontsize_adj=0):
         # Gera a figura do Wavelet
         fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize)
@@ -445,7 +445,7 @@ class TelaResultadosUI(ctk.CTkFrame):
         fig_spec.tight_layout()
         return fig_spec, (ax_spec_adhd, ax_spec_ctrl)
 
-   
+    
     def _plot_sliding_mean_var_fig(self, modo_gen, modo_tbr_adhd, modo_tbr_ctrl, figsize=(14, 6), fontsize_adj=0):
         sinais_adhd_filtr, tbr_adhd_filtr = [], []
         sinais_ctrl_filtr, tbr_ctrl_filtr = [], []
@@ -484,12 +484,17 @@ class TelaResultadosUI(ctk.CTkFrame):
 
         return fig, axes
 
-    def _plot_sliding_mean_var_aux(self, eixos, sinal, fs_hz, prefixo_titulo, fontsize_adj=0):
+    def _calc_sliding_window_stats(self, sinal, fs_hz):
+        """Calcula a média e variância deslizantes."""
         win_size_sec = 1.0 # Janela de 1s
         win_samples = int(win_size_sec * fs_hz)
         step_samples = win_samples // 4 # 25% passo
         
         means, vars, time_pts = [], [], []
+
+        # Verifica se o sinal é longo o suficiente para pelo menos uma janela
+        if len(sinal) < win_samples:
+            return np.array([0]), np.array([0]), np.array([0]) # Retorna 
 
         for i in range(0, len(sinal) - win_samples + 1, step_samples):
             window = sinal[i:i + win_samples]
@@ -497,20 +502,96 @@ class TelaResultadosUI(ctk.CTkFrame):
             vars.append(np.var(window))
             time_pts.append((i + win_samples / 2) / fs_hz)
         
+        # Se o loop não rodou (sinal curto), retorna 
+        if not time_pts:
+             return np.array([0]), np.array([0]), np.array([0])
+
+        return np.array(means), np.array(vars), np.array(time_pts)
+
+    def _plot_sliding_subplot(self, eixos, time_pts, means, vars, prefixo_titulo, mean_ylim, var_ylim):
+        """Plota os dados de média e variância em eixos designados com limites fixos."""
         ax_mean, ax_var = eixos[0], eixos[1]
         
         ax_mean.plot(time_pts, means, color=CORES["prune"])
         self._estilo_grafico_padrao(ax_mean, ax_mean.get_figure(), f"Média - {prefixo_titulo}")
-        
         ax_mean.set_ylabel("Média (µV)", fontsize=15)
         ax_mean.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
+        # Aplicando o limite Y global
+        ax_mean.set_ylim(mean_ylim)
 
         ax_var.plot(time_pts, vars, color=CORES["mauve"])
         self._estilo_grafico_padrao(ax_var, ax_var.get_figure(), f"Variância - {prefixo_titulo}")
-        
         ax_var.set_ylabel("Variância (µV²)", fontsize=15)
         ax_var.set_xlabel("Tempo (s)", fontsize=15)
         ax_var.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
+        # Aplicando o limite Y global
+        ax_var.set_ylim(var_ylim)
+
+    def _plot_sliding_mean_var_fig(self, modo_gen, modo_tbr_adhd, modo_tbr_ctrl, figsize=(14, 6), fontsize_adj=0):
+        sinais_adhd_filtr, tbr_adhd_filtr = [], []
+        sinais_ctrl_filtr, tbr_ctrl_filtr = [], []
+
+        if modo_gen == "Geral":
+            sinais_adhd_filtr = self.dados_eeg_carregados.get('F-TDAH', []) + self.dados_eeg_carregados.get('M-TDAH', [])
+            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-TDAH', []) + self.resultados_analise_obj['tbr_por_grupo'].get('M-TDAH', [])
+            sinais_ctrl_filtr = self.dados_eeg_carregados.get('F-Ctrl', []) + self.dados_eeg_carregados.get('M-Ctrl', [])
+            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-Ctrl', []) + self.resultados_analise_obj['tbr_por_grupo'].get('M-Ctrl', [])
+        elif modo_gen == "Feminino":
+            sinais_adhd_filtr = self.dados_eeg_carregados.get('F-TDAH', [])
+            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-TDAH', [])
+            sinais_ctrl_filtr = self.dados_eeg_carregados.get('F-Ctrl', [])
+            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-Ctrl', [])
+        else: # Masculino
+            sinais_adhd_filtr = self.dados_eeg_carregados.get('M-TDAH', [])
+            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('M-TDAH', [])
+            sinais_ctrl_filtr = self.dados_eeg_carregados.get('M-Ctrl', [])
+            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('M-Ctrl', [])
+        
+        if not sinais_adhd_filtr or not sinais_ctrl_filtr:
+            return None, None # Retorna None se não houver dados
+        
+        idx_adhd = np.argmax(tbr_adhd_filtr) if modo_tbr_adhd == "TBR mais alto" else np.argmin(tbr_adhd_filtr)
+        idx_ctrl = np.argmax(tbr_ctrl_filtr) if modo_tbr_ctrl == "TBR mais alto" else np.argmin(tbr_ctrl_filtr)
+
+        sinal_adhd_sel = sinais_adhd_filtr[idx_adhd][0, :]
+        sinal_ctrl_sel = sinais_ctrl_filtr[idx_ctrl][0, :]
+
+        means_adhd, vars_adhd, time_adhd = self._calc_sliding_window_stats(sinal_adhd_sel, FS_AMOSTRA)
+        means_ctrl, vars_ctrl, time_ctrl = self._calc_sliding_window_stats(sinal_ctrl_sel, FS_AMOSTRA)
+        
+        # limites globais para Média e Variância
+        try:
+            all_means = np.concatenate([means_adhd, means_ctrl])
+            all_vars = np.concatenate([vars_adhd, vars_ctrl])
+
+            mean_min, mean_max = np.min(all_means), np.max(all_means)
+            var_min, var_max = np.min(all_vars), np.max(all_vars)
+
+            # Adicionar um 'padding' de 5% para a visualização não ficar colada na borda
+            mean_range = (mean_max - mean_min) * 0.05
+            var_range = (var_max - var_min) * 0.05
+
+            # Prevenir divisão por zero se min == max (range = 0)
+            if mean_range == 0: mean_range = 1 
+            if var_range == 0: var_range = 1
+
+            global_mean_ylim = (mean_min - mean_range, mean_max + mean_range)
+            global_var_ylim = (var_min - var_range, var_max + var_range)
+
+        except ValueError: # Caso um dos arrays esteja vazio
+            return None, None # Não pode plotar
+
+        fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True)
+        fig.subplots_adjust(top=0.92, bottom=0.1, left=0.08, right=0.98, hspace=0.5, wspace=0.3)
+        self._plot_sliding_subplot(axes[:, 0], time_adhd, means_adhd, vars_adhd, 
+                                   f"TDAH ({modo_gen} - {modo_tbr_adhd})", 
+                                   global_mean_ylim, global_var_ylim)
+        
+        self._plot_sliding_subplot(axes[:, 1], time_ctrl, means_ctrl, vars_ctrl, 
+                                   f"Ctrl ({modo_gen} - {modo_tbr_ctrl})", 
+                                   global_mean_ylim, global_var_ylim)
+
+        return fig, axes
 
     # --- MÉTODOS DE PLOTAGEM QUE UTILIZAM AS FIGURAS GERADAS ---
     def plotar_todos_os_grafs(self):
@@ -677,6 +758,7 @@ class TelaResultadosUI(ctk.CTkFrame):
                 desc = item.get('desc', '')
                 nome_arquivo = f"{i:02d}_{label}.png"
                 path_completo = os.path.join(caminho_pasta, nome_arquivo)
+                # Preservando a alteração para dpi=400
                 fig.savefig(path_completo, dpi=400)
             messagebox.showinfo("Sucesso", f"Todos os gráficos foram salvos na pasta:\n{caminho_pasta}")
 
