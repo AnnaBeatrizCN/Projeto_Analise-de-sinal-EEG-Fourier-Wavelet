@@ -22,7 +22,7 @@ CORES = {
     "amarelo": "#FFD700"
 }
 
-# Bandas de freq. p/ análise
+# Bandas de freq para análise
 BANDAS = {'theta': [4, 8], 'beta': [13, 30]}
 FS_AMOSTRA = 256 # Freq. amostragem em Hz
 
@@ -174,11 +174,9 @@ class TelaResultadosUI(ctk.CTkFrame):
 
         self.lista_de_figs = []
 
-        self.scrollable_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self.scrollable_frame.pack(fill="both", expand=True)
-
-        header_frm = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
+        header_frm = ctk.CTkFrame(self, fg_color="transparent") 
         header_frm.pack(fill="x", padx=10, pady=10)
+        
         btn_voltar = ctk.CTkButton(header_frm, text="← Voltar", command=lambda: ctrl.mostrar_tela("Tela_Inicial"),
                                      fg_color="transparent", text_color=CORES["prune"], hover_color=CORES["rosa"], width=50)
         btn_voltar.pack(side="left")
@@ -188,12 +186,24 @@ class TelaResultadosUI(ctk.CTkFrame):
                                               fg_color=CORES["mauve"], text_color=CORES["blush"], hover_color=CORES["prune"])
         btn_salvar_graficos.pack(side="right", padx=10)
 
-        self.tab_view_res = ctk.CTkTabview(self.scrollable_frame, fg_color=CORES["rosa"])
+        self.tab_view_res = ctk.CTkTabview(self, fg_color=CORES["rosa"]) 
         self.tab_view_res.pack(pady=10, padx=10, fill="both", expand=True)
+
         self.tab_grupo_comp = self.tab_view_res.add("Comp. Grupos")
+        self.scroll_grupo_comp = ctk.CTkScrollableFrame(self.tab_grupo_comp, fg_color="transparent")
+        self.scroll_grupo_comp.pack(fill="both", expand=True)
+        
         self.tab_indiv_analise = self.tab_view_res.add("Caso Individual")
+        self.scroll_indiv_analise = ctk.CTkScrollableFrame(self.tab_indiv_analise, fg_color="transparent")
+        self.scroll_indiv_analise.pack(fill="both", expand=True)
+        
         self.tab_medias_analise = self.tab_view_res.add("Análises Médias")
+        self.scroll_medias_analise = ctk.CTkScrollableFrame(self.tab_medias_analise, fg_color="transparent")
+        self.scroll_medias_analise.pack(fill="both", expand=True)
+        
         self.tab_sliding_analise = self.tab_view_res.add("Média e Variância")
+        self.scroll_sliding_analise = ctk.CTkScrollableFrame(self.tab_sliding_analise, fg_color="transparent")
+        self.scroll_sliding_analise.pack(fill="both", expand=True)
         
         self.var_sliding_adhd_tbr = ctk.StringVar(value="TBR mais alto")
         self.var_sliding_ctrl_tbr = ctk.StringVar(value="TBR mais baixo")
@@ -209,7 +219,7 @@ class TelaResultadosUI(ctk.CTkFrame):
 
     def _wrap_text(self, draw, text, font, max_width_px):
         """Quebra o texto em linhas para caber na largura."""
-        # tenta estimativa por caracteres; ajusta empiricamente
+        # tenta estimativa por caracteres
         avg_char_w = font.getlength("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") / 52.0
         max_chars = max(int(max_width_px / max(1, avg_char_w)) - 2, 10)
         lines = []
@@ -236,7 +246,6 @@ class TelaResultadosUI(ctk.CTkFrame):
 
             # desenha faixa
             draw2 = ImageDraw.Draw(nova)
-            # fundo levemente rosado pra casar com a UI
             draw2.rectangle([0, img.height, img.width, img.height + legenda_h], fill=(245, 234, 233))
             y = img.height + pad
             for ln in lines:
@@ -279,7 +288,7 @@ class TelaResultadosUI(ctk.CTkFrame):
     def _estilo_grafico_padrao(self, ax_obj, fig_obj, titulo_str):
         fig_obj.patch.set_facecolor('white')
         ax_obj.set_facecolor('white')
-        ax_obj.set_title(titulo_str, color=CORES["text_dark"], fontsize=20, weight="bold")
+        ax_obj.set_title(titulo_str, color=CORES["text_dark"], fontsize=15, weight="bold")
         ax_obj.tick_params(axis='both', colors=CORES["text_dark"],labelsize=13)
     
         ax_obj.xaxis.label.set_color('black')
@@ -312,8 +321,10 @@ class TelaResultadosUI(ctk.CTkFrame):
 
     
     def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(13, 4.5), fontsize_adj=0):
+        figsize_novo = (figsize[0], 5.0)
+        
         # Gera a figura do Wavelet
-        fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize)
+        fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize_novo)
 
         pow_a, freqs_a, temps_a = analise_cwt_sinal(sinal_adhd, FS_AMOSTRA)
         pow_c, freqs_c, temps_c = analise_cwt_sinal(sinal_ctrl, FS_AMOSTRA)
@@ -341,8 +352,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_wav_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
         barra_wav_c.ax.tick_params(labelsize=14)
 
-        # Gera a figura do Espectrograma
-        fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize)
+        # Gera a figura do Espectrograma (usando o mesmo figsize_novo)
+        fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize_novo)
         
         freqs_sa, temps_sa, Sxx_a = calc_espectrograma(sinal_adhd, FS_AMOSTRA)
         freqs_sc, temps_sc, Sxx_c = calc_espectrograma(sinal_ctrl, FS_AMOSTRA)
@@ -446,44 +457,6 @@ class TelaResultadosUI(ctk.CTkFrame):
         return fig_spec, (ax_spec_adhd, ax_spec_ctrl)
 
     
-    def _plot_sliding_mean_var_fig(self, modo_gen, modo_tbr_adhd, modo_tbr_ctrl, figsize=(14, 6), fontsize_adj=0):
-        sinais_adhd_filtr, tbr_adhd_filtr = [], []
-        sinais_ctrl_filtr, tbr_ctrl_filtr = [], []
-
-        if modo_gen == "Geral":
-            sinais_adhd_filtr = self.dados_eeg_carregados.get('F-TDAH', []) + self.dados_eeg_carregados.get('M-TDAH', [])
-            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-TDAH', []) + self.resultados_analise_obj['tbr_por_grupo'].get('M-TDAH', [])
-            sinais_ctrl_filtr = self.dados_eeg_carregados.get('F-Ctrl', []) + self.dados_eeg_carregados.get('M-Ctrl', [])
-            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-Ctrl', []) + self.resultados_analise_obj['tbr_por_grupo'].get('M-Ctrl', [])
-        elif modo_gen == "Feminino":
-            sinais_adhd_filtr = self.dados_eeg_carregados.get('F-TDAH', [])
-            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-TDAH', [])
-            sinais_ctrl_filtr = self.dados_eeg_carregados.get('F-Ctrl', [])
-            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('F-Ctrl', [])
-        else: # Masculino
-            sinais_adhd_filtr = self.dados_eeg_carregados.get('M-TDAH', [])
-            tbr_adhd_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('M-TDAH', [])
-            sinais_ctrl_filtr = self.dados_eeg_carregados.get('M-Ctrl', [])
-            tbr_ctrl_filtr = self.resultados_analise_obj['tbr_por_grupo'].get('M-Ctrl', [])
-        
-        if not sinais_adhd_filtr or not sinais_ctrl_filtr:
-            return None, None # Retorna None se não houver dados
-        
-        idx_adhd = np.argmax(tbr_adhd_filtr) if modo_tbr_adhd == "TBR mais alto" else np.argmin(tbr_adhd_filtr)
-        idx_ctrl = np.argmax(tbr_ctrl_filtr) if modo_tbr_ctrl == "TBR mais alto" else np.argmin(tbr_ctrl_filtr)
-
-        sinal_adhd_sel = sinais_adhd_filtr[idx_adhd][0, :]
-        sinal_ctrl_sel = sinais_ctrl_filtr[idx_ctrl][0, :]
-        
-        fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True)
-        # Ajustando espaçamento para fontes maiores
-        fig.subplots_adjust(top=0.92, bottom=0.1, left=0.08, right=0.98, hspace=0.5, wspace=0.3)
-
-        self._plot_sliding_mean_var_aux(axes[:, 0], sinal_adhd_sel, FS_AMOSTRA, f"TDAH ({modo_gen} - {modo_tbr_adhd})", fontsize_adj)
-        self._plot_sliding_mean_var_aux(axes[:, 1], sinal_ctrl_sel, FS_AMOSTRA, f"Ctrl ({modo_gen} - {modo_tbr_ctrl})", fontsize_adj)
-
-        return fig, axes
-
     def _calc_sliding_window_stats(self, sinal, fs_hz):
         """Calcula a média e variância deslizantes."""
         win_size_sec = 1.0 # Janela de 1s
@@ -516,7 +489,6 @@ class TelaResultadosUI(ctk.CTkFrame):
         self._estilo_grafico_padrao(ax_mean, ax_mean.get_figure(), f"Média - {prefixo_titulo}")
         ax_mean.set_ylabel("Média (µV)", fontsize=15)
         ax_mean.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
-        # Aplicando o limite Y global
         ax_mean.set_ylim(mean_ylim)
 
         ax_var.plot(time_pts, vars, color=CORES["mauve"])
@@ -524,10 +496,10 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_var.set_ylabel("Variância (µV²)", fontsize=15)
         ax_var.set_xlabel("Tempo (s)", fontsize=15)
         ax_var.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
-        # Aplicando o limite Y global
         ax_var.set_ylim(var_ylim)
 
     def _plot_sliding_mean_var_fig(self, modo_gen, modo_tbr_adhd, modo_tbr_ctrl, figsize=(14, 6), fontsize_adj=0):
+
         sinais_adhd_filtr, tbr_adhd_filtr = [], []
         sinais_ctrl_filtr, tbr_ctrl_filtr = [], []
 
@@ -559,6 +531,9 @@ class TelaResultadosUI(ctk.CTkFrame):
         means_adhd, vars_adhd, time_adhd = self._calc_sliding_window_stats(sinal_adhd_sel, FS_AMOSTRA)
         means_ctrl, vars_ctrl, time_ctrl = self._calc_sliding_window_stats(sinal_ctrl_sel, FS_AMOSTRA)
         
+        label_tbr_adhd = modo_tbr_adhd.replace("TBR mais ", "") # "Alto" ou "Baixo"
+        label_tbr_ctrl = modo_tbr_ctrl.replace("TBR mais ", "") # "Alto" ou "Baixo"
+
         # limites globais para Média e Variância
         try:
             all_means = np.concatenate([means_adhd, means_ctrl])
@@ -567,7 +542,6 @@ class TelaResultadosUI(ctk.CTkFrame):
             mean_min, mean_max = np.min(all_means), np.max(all_means)
             var_min, var_max = np.min(all_vars), np.max(all_vars)
 
-            # Adicionar um 'padding' de 5% para a visualização não ficar colada na borda
             mean_range = (mean_max - mean_min) * 0.05
             var_range = (var_max - var_min) * 0.05
 
@@ -580,29 +554,49 @@ class TelaResultadosUI(ctk.CTkFrame):
 
         except ValueError: # Caso um dos arrays esteja vazio
             return None, None # Não pode plotar
-
-        fig, axes = plt.subplots(2, 2, figsize=figsize, sharex=True)
-        fig.subplots_adjust(top=0.92, bottom=0.1, left=0.08, right=0.98, hspace=0.5, wspace=0.3)
-        self._plot_sliding_subplot(axes[:, 0], time_adhd, means_adhd, vars_adhd, 
-                                   f"TDAH ({modo_gen} - {modo_tbr_adhd})", 
-                                   global_mean_ylim, global_var_ylim)
         
-        self._plot_sliding_subplot(axes[:, 1], time_ctrl, means_ctrl, vars_ctrl, 
-                                   f"Ctrl ({modo_gen} - {modo_tbr_ctrl})", 
-                                   global_mean_ylim, global_var_ylim)
+        figsize_novo = (14, 5) 
+        fig, axes = plt.subplots(1, 2, figsize=figsize_novo, sharex=True)
+        
+        fig.subplots_adjust(top=0.85, bottom=0.2, left=0.08, right=0.98, hspace=0.4, wspace=0.25)
 
+        ax_mean_comb = axes[0]
+        ax_mean_comb.plot(time_adhd, means_adhd, color=CORES["prune"], label="TDAH")
+        ax_mean_comb.plot(time_ctrl, means_ctrl, color=CORES["mauve"], label="Controle", linestyle='--')
+        
+        titulo_media = f"Média ({modo_gen} | TDAH {label_tbr_adhd} vs Ctrl {label_tbr_ctrl})"
+        self._estilo_grafico_padrao(ax_mean_comb, fig, titulo_media)
+        
+        ax_mean_comb.set_ylabel("Média (µV)", fontsize=15)
+        ax_mean_comb.set_xlabel("Tempo (s)", fontsize=15)
+        ax_mean_comb.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
+        ax_mean_comb.set_ylim(global_mean_ylim)
+        ax_mean_comb.legend() 
+
+        ax_var_comb = axes[1]
+        ax_var_comb.plot(time_adhd, vars_adhd, color=CORES["prune"], label="TDAH")
+        ax_var_comb.plot(time_ctrl, vars_ctrl, color=CORES["mauve"], label="Controle", linestyle='--')
+        
+        titulo_var = f"Variância ({modo_gen} | TDAH {label_tbr_adhd} vs Ctrl {label_tbr_ctrl})"
+        self._estilo_grafico_padrao(ax_var_comb, fig, titulo_var)
+
+        ax_var_comb.set_ylabel("Variância (µV²)", fontsize=15)
+        ax_var_comb.set_xlabel("Tempo (s)", fontsize=15)
+        ax_var_comb.tick_params(axis='both', colors=CORES["text_dark"], labelsize=14)
+        ax_var_comb.set_ylim(global_var_ylim)
+        ax_var_comb.legend() 
+        
         return fig, axes
 
-    # --- MÉTODOS DE PLOTAGEM QUE UTILIZAM AS FIGURAS GERADAS ---
     def plotar_todos_os_grafs(self):
         # Limpa a lista de figuras antes de gerar novos gráficos
         self.lista_de_figs = []
 
-        # Limpar os frames existentes antes de plotar
-        for widget in self.tab_grupo_comp.winfo_children(): widget.destroy()
-        for widget in self.tab_indiv_analise.winfo_children(): widget.destroy()
-        for widget in self.tab_medias_analise.winfo_children(): widget.destroy()
-        for widget in self.tab_sliding_analise.winfo_children(): widget.destroy()
+        # Limpar os frames DENTRO das abas de rolagem
+        for widget in self.scroll_grupo_comp.winfo_children(): widget.destroy()
+        for widget in self.scroll_indiv_analise.winfo_children(): widget.destroy()
+        for widget in self.scroll_medias_analise.winfo_children(): widget.destroy()
+        for widget in self.scroll_sliding_analise.winfo_children(): widget.destroy()
 
         self._plot_comp_grupos_tbr_ui()
         self._setup_analise_indiv_ui()
@@ -614,25 +608,30 @@ class TelaResultadosUI(ctk.CTkFrame):
         for widget in frame.winfo_children():
             widget.destroy()
         canvas = FigureCanvasTkAgg(fig, master=frame)
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+        
+        canvas.get_tk_widget().pack(side="top", fill="x", expand=False)
+        
         canvas.draw()
         plt.close(fig) # Fecha a figura para não exibir duas vezes
 
     def _plot_comp_grupos_tbr_ui(self):
         fig, _ = self._plot_comp_grupos_tbr_fig()
-        self._mostrar_fig_no_frame(fig, self.tab_grupo_comp)
+        # Plotando no frame de rolagem da aba
+        self._mostrar_fig_no_frame(fig, self.scroll_grupo_comp)
+        
         # registrar com rótulo e descrição
         desc = ("Boxplot da Razão Teta/Beta (TBR) por grupo: TDAH (F/M) e controle (F/M). "
                 "Bandas: θ 4–8 Hz, β 13–30 Hz; fs=256 Hz. "
                 "TBR = potência θ / β; mediana em amarelo; caixas representam o IQR.")
         self._registrar_fig(fig, "Grupos", desc)
         
-        ctk.CTkButton(self.tab_grupo_comp, text="💡 Entender TBR", corner_radius=10, fg_color=CORES["mauve"], text_color=CORES["blush"],
+        # Adicionando o botão no frame de rolagem da aba
+        ctk.CTkButton(self.scroll_grupo_comp, text="💡 Entender TBR", corner_radius=10, fg_color=CORES["mauve"], text_color=CORES["blush"],
                         command=lambda: messagebox.showinfo("TBR Insight", "Uma Razão Teta/Beta (TBR) mais alta no grupo TDAH é um biomarcador comum, sugerindo uma maturação cerebral mais lenta. A separação por gênero permite investigar se há diferenças neste padrão.")).pack(pady=10, padx=20)
-    
+
     def _setup_analise_indiv_ui(self):
-        for widget in self.tab_indiv_analise.winfo_children(): widget.destroy()
-        ctrl_pnl = ctk.CTkFrame(self.tab_indiv_analise, fg_color=CORES["blush"])
+        for widget in self.scroll_indiv_analise.winfo_children(): widget.destroy()
+        ctrl_pnl = ctk.CTkFrame(self.scroll_indiv_analise, fg_color=CORES["blush"])
         ctrl_pnl.pack(fill="x", pady=10, padx=10)
         
         ctk.CTkLabel(ctrl_pnl, text="Caso TDAH:", text_color=CORES["text_dark"]).pack(side="left", padx=(10,5))
@@ -644,11 +643,12 @@ class TelaResultadosUI(ctk.CTkFrame):
         ctk.CTkComboBox(ctrl_pnl, variable=self.var_tbr_ctrl_indiv, values=["TBR mais alto", "TBR mais baixo"]).pack(side="left", padx=5)
         
         ctk.CTkButton(ctrl_pnl, text="Atualizar", command=self.atualizar_plots_indiv).pack(side="right", padx=10)
+
+        self.frm_wav_plot = ctk.CTkFrame(self.scroll_indiv_analise, fg_color="transparent")
+        self.frm_wav_plot.pack(side="top", fill="x", expand=False, pady=10)
         
-        self.frm_wav_plot = ctk.CTkFrame(self.tab_indiv_analise, fg_color="transparent")
-        self.frm_wav_plot.pack(fill="both", expand=True, pady=5)
-        self.frm_spec_plot = ctk.CTkFrame(self.tab_indiv_analise, fg_color="transparent")
-        self.frm_spec_plot.pack(fill="both", expand=True, pady=5)
+        self.frm_spec_plot = ctk.CTkFrame(self.scroll_indiv_analise, fg_color="transparent")
+        self.frm_spec_plot.pack(side="top", fill="x", expand=False, pady=10)
         self.atualizar_plots_indiv()
 
     def atualizar_plots_indiv(self):
@@ -679,16 +679,17 @@ class TelaResultadosUI(ctk.CTkFrame):
         self._mostrar_fig_no_frame(fig_spec, self.frm_spec_plot)
 
     def _setup_analise_media_ui(self):
-        for widget in self.tab_medias_analise.winfo_children(): widget.destroy()
-        self.genero_selecionar_media = ctk.CTkSegmentedButton(self.tab_medias_analise, values=["Geral", "Feminino", "Masculino"],
+        for widget in self.scroll_medias_analise.winfo_children(): widget.destroy()
+        self.genero_selecionar_media = ctk.CTkSegmentedButton(self.scroll_medias_analise, values=["Geral", "Feminino", "Masculino"],
                                                               command=self.atualizar_plots_media, fg_color=CORES["mauve"],
                                                               selected_color=CORES["prune"], selected_hover_color=CORES["prune"],
                                                               unselected_color=CORES["mauve"], unselected_hover_color=CORES["rosa"],
                                                               text_color=CORES["blush"])
         self.genero_selecionar_media.set("Geral")
         self.genero_selecionar_media.pack(pady=10)
-        self.frame_plots_media_tab = ctk.CTkFrame(self.tab_medias_analise, fg_color="transparent")
-        self.frame_plots_media_tab.pack(fill="both", expand=True)
+        self.frame_plots_media_tab = ctk.CTkFrame(self.scroll_medias_analise, fg_color="transparent")
+        self.frame_plots_media_tab.pack(side="top", fill="x", expand=False)
+        
         self.atualizar_plots_media("Geral")
         
     def atualizar_plots_media(self, modo_gen):
@@ -700,9 +701,10 @@ class TelaResultadosUI(ctk.CTkFrame):
             self._registrar_fig(fig_spec, f"EspectroMedio_{modo_gen}", desc)
 
     def _setup_analise_sliding_ui(self):
-        for widget in self.tab_sliding_analise.winfo_children(): widget.destroy()
+        # Widgets são filhos do frame de rolagem: self.scroll_sliding_analise
+        for widget in self.scroll_sliding_analise.winfo_children(): widget.destroy()
 
-        ctrl_pnl = ctk.CTkFrame(self.tab_sliding_analise, fg_color=CORES["blush"])
+        ctrl_pnl = ctk.CTkFrame(self.scroll_sliding_analise, fg_color=CORES["blush"])
         ctrl_pnl.pack(fill="x", pady=10, padx=10)
 
         ctk.CTkLabel(ctrl_pnl, text="Caso TDAH:", text_color=CORES["text_dark"]).pack(side="left", padx=(15,10))
@@ -720,9 +722,10 @@ class TelaResultadosUI(ctk.CTkFrame):
                                                          text_color=CORES["blush"], variable=self.var_sliding_gen_sel)
         self.sel_genero_sliding.set("Geral")
         self.sel_genero_sliding.pack(side="right", padx=10)
+ 
+        self.frame_plots_sliding_tab = ctk.CTkFrame(self.scroll_sliding_analise, fg_color="transparent")
+        self.frame_plots_sliding_tab.pack(side="top", fill="x", expand=False, pady=5)
         
-        self.frame_plots_sliding_tab = ctk.CTkFrame(self.tab_sliding_analise, fg_color="transparent")
-        self.frame_plots_sliding_tab.pack(fill="both", expand=True, pady=5)
         self.atualizar_plots_sliding()
 
     def atualizar_plots_sliding(self, *args):
@@ -758,7 +761,6 @@ class TelaResultadosUI(ctk.CTkFrame):
                 desc = item.get('desc', '')
                 nome_arquivo = f"{i:02d}_{label}.png"
                 path_completo = os.path.join(caminho_pasta, nome_arquivo)
-                # Preservando a alteração para dpi=400
                 fig.savefig(path_completo, dpi=400)
             messagebox.showinfo("Sucesso", f"Todos os gráficos foram salvos na pasta:\n{caminho_pasta}")
 
