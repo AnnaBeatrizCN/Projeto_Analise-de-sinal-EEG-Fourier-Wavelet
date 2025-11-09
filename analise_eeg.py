@@ -78,10 +78,10 @@ class AppEEG(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Analisador EEG v1.0")
-        self.geometry("1200x750")
+        self.geometry("1300x800")
         self.configure(fg_color=CORES["navy"])
 
-        self.frm_main_ui = ctk.CTkFrame(self, width=1200, height=750, fg_color=CORES["rosa"], corner_radius=30)
+        self.frm_main_ui = ctk.CTkFrame(self, width=1300, height=750, fg_color=CORES["rosa"], corner_radius=30)
         self.frm_main_ui.pack(expand=True, pady=20)
         self.frm_main_ui.pack_propagate(False)
 
@@ -320,15 +320,16 @@ class TelaResultadosUI(ctk.CTkFrame):
         return fig, ax
 
     
-    def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(13, 4.5), fontsize_adj=0):
-        figsize_novo = (figsize[0], 5.0)
+    def _plot_indiv_figs(self, sinal_adhd, sinal_ctrl, figsize=(14, 4), fontsize_adj=0): #Figsize recomendada: 14, 4, precisa ajudar o padding top e etc
+        figsize = (figsize[0], 5.0)
         
         # Gera a figura do Wavelet
-        fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize_novo)
+        fig_wav, (ax_wav_adhd, ax_wav_ctrl) = plt.subplots(1, 2, figsize=figsize)
 
         pow_a, freqs_a, temps_a = analise_cwt_sinal(sinal_adhd, FS_AMOSTRA)
         pow_c, freqs_c, temps_c = analise_cwt_sinal(sinal_ctrl, FS_AMOSTRA)
         
+        limit_time_wav = np.max(temps_a) if temps_a.size > 0 else 0
         #Calcula os valores minimos e máximos para colocar como escala
         escala_min_wav = min(np.min(pow_a), np.min(pow_c))
         escala_max_wav = max(np.max(pow_a), np.max(pow_c))
@@ -342,6 +343,10 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_wav_adhd.set_xlabel("Tempo (s)", fontsize=15)
         ax_wav_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
         barra_wav_a.ax.tick_params(labelsize=14)
+        barra_wav_a.set_label("Potência (dB)", fontsize=14)
+
+        ax_wav_adhd.set_xlim(0, limit_time_wav)
+        ax_wav_ctrl.set_xlim(0, limit_time_wav)
 
         im_c = ax_wav_ctrl.contourf(temps_c, freqs_c, pow_c, levels=niveis_compartilhados_wav, cmap='viridis')
         self._estilo_grafico_padrao(ax_wav_ctrl, fig_wav, f"Wavelet controle ({self.var_tbr_ctrl_indiv.get()})")
@@ -351,13 +356,16 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_wav_ctrl.set_xlabel("Tempo (s)", fontsize=15)
         ax_wav_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
         barra_wav_c.ax.tick_params(labelsize=14)
+        barra_wav_c.set_label("Potência (dB)", fontsize=14)
 
-        # Gera a figura do Espectrograma (usando o mesmo figsize_novo)
-        fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize_novo)
+        # Gera a figura do Espectrograma (usando o mesmo figsize)
+        fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize)
         
         freqs_sa, temps_sa, Sxx_a = calc_espectrograma(sinal_adhd, FS_AMOSTRA)
         freqs_sc, temps_sc, Sxx_c = calc_espectrograma(sinal_ctrl, FS_AMOSTRA)
         
+        limit_time_spec = np.max(temps_sa) if temps_sa.size > 0 else 0
+
         dados_db_a = 10 * np.log10(Sxx_a)
         dados_db_c = 10 * np.log10(Sxx_c)
         escala_min_spec = min(np.min(dados_db_a), np.min(dados_db_c))
@@ -370,19 +378,40 @@ class TelaResultadosUI(ctk.CTkFrame):
         ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=15)
         ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
         barra_espectograma_a.ax.tick_params(labelsize=14)
-        
+        barra_espectograma_a.set_label("Potência (dB)", fontsize=14)
+
         im_sc = ax_spec_ctrl.pcolormesh(temps_sc, freqs_sc, dados_db_c, shading='gouraud', cmap='viridis', vmin=escala_min_spec, vmax=escala_max_spec)
         self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectrograma controle ({self.var_tbr_ctrl_indiv.get()})")
         barra_espectograma_c = fig_spec.colorbar(im_sc, ax=ax_spec_ctrl)
         fig_spec.tight_layout()
+        fig_spec.subplots_adjust(left=0.08, right=0.95, bottom=0.2, top=0.85, wspace=0.25, hspace=0.4)
         
+
         ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=15)
         ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
         barra_espectograma_c.ax.tick_params(labelsize=14)
+        barra_espectograma_c.set_label("Potência (dB)", fontsize=14)
+        fig_wav.subplots_adjust(left=0.08, right=0.95, bottom=0.2, top=0.85, wspace=0.25, hspace=0.4)
 
+        # Encontra o tempo de início baseado nos outros sinais
+        # Usa-se min() para garantir que pegamos o início, mesmo se um sinal for vazio
+        start_time = min(temps_sa[0] if temps_sa.size > 0 else float('inf'), 
+                         temps_sc[0] if temps_sc.size > 0 else float('inf'))
+        
+        # Fallback caso ambos os sinais estejam vazios
+        if start_time == float('inf'):
+            start_time = 0 
+
+        # Define o tempo final com base nos outros sinais (valor pego a mão)
+        end_time = 14.2 
+
+        # Aplica os limites corretos
+        ax_spec_adhd.set_xlim(start_time, end_time) 
+        ax_spec_ctrl.set_xlim(start_time, end_time)
+        
         return fig_wav, fig_spec
 
-    def _plot_media_espectro_fig(self, modo_gen, figsize=(13, 4.5), fontsize_adj=0):
+    def _plot_media_espectro_fig(self, modo_gen, figsize=(14, 4), fontsize_adj=0):
         fig_spec, (ax_spec_adhd, ax_spec_ctrl) = plt.subplots(1, 2, figsize=figsize)
         sinais_adhd, sinais_ctrl = [], []
 
@@ -423,7 +452,6 @@ class TelaResultadosUI(ctk.CTkFrame):
             dados_validos.append(dados_db_ctrl)
 
         if dados_validos:
-            # Usar nanmin/nanmax para ignorar possíveis -inf de log(0)
             escala_min_spec = np.nanmin([np.nanmin(d) for d in dados_validos if np.size(d) > 0])
             escala_max_spec = np.nanmax([np.nanmax(d) for d in dados_validos if np.size(d) > 0])
         else:
@@ -436,7 +464,9 @@ class TelaResultadosUI(ctk.CTkFrame):
             
             ax_spec_adhd.set_xlabel("Tempo (s)", fontsize=15)
             ax_spec_adhd.set_ylabel("Frequência (Hz)", fontsize=15)
-            fig_spec.colorbar(im_adhd, ax=ax_spec_adhd).ax.tick_params(labelsize=14)
+            barra_adhd = fig_spec.colorbar(im_adhd, ax=ax_spec_adhd)
+            barra_adhd.ax.tick_params(labelsize=14)
+            barra_adhd.set_label("Potência (dB)", fontsize=14) # <-- Adiciona o rótulo
         else:
             self._estilo_grafico_padrao(ax_spec_adhd, fig_spec, f"Espectro médio TDAH ({modo_gen})")
             ax_spec_adhd.text(0.5, 0.5, "Sem dados.", horizontalalignment='center', verticalalignment='center', transform=ax_spec_adhd.transAxes, color=CORES["text_dark"])
@@ -448,7 +478,9 @@ class TelaResultadosUI(ctk.CTkFrame):
             
             ax_spec_ctrl.set_xlabel("Tempo (s)", fontsize=15)
             ax_spec_ctrl.set_ylabel("Frequência (Hz)", fontsize=15)
-            fig_spec.colorbar(im_ctrl, ax=ax_spec_ctrl).ax.tick_params(labelsize=14)
+            barra_ctrl = fig_spec.colorbar(im_ctrl, ax=ax_spec_ctrl)
+            barra_ctrl.ax.tick_params(labelsize=14)
+            barra_ctrl.set_label("Potência (dB)", fontsize=14) 
         else:
             self._estilo_grafico_padrao(ax_spec_ctrl, fig_spec, f"Espectro médio Ctrl ({modo_gen})")
             ax_spec_ctrl.text(0.5, 0.5, "Sem dados.", horizontalalignment='center', verticalalignment='center', transform=ax_spec_ctrl.transAxes, color=CORES["text_dark"])
@@ -456,7 +488,6 @@ class TelaResultadosUI(ctk.CTkFrame):
         fig_spec.tight_layout()
         return fig_spec, (ax_spec_adhd, ax_spec_ctrl)
 
-    
     def _calc_sliding_window_stats(self, sinal, fs_hz):
         """Calcula a média e variância deslizantes."""
         win_size_sec = 1.0 # Janela de 1s
@@ -555,8 +586,8 @@ class TelaResultadosUI(ctk.CTkFrame):
         except ValueError: # Caso um dos arrays esteja vazio
             return None, None # Não pode plotar
         
-        figsize_novo = (14, 5) 
-        fig, axes = plt.subplots(1, 2, figsize=figsize_novo, sharex=True)
+        figsize = (14, 5) 
+        fig, axes = plt.subplots(1, 2, figsize=figsize, sharex=True)
         
         fig.subplots_adjust(top=0.85, bottom=0.2, left=0.08, right=0.98, hspace=0.4, wspace=0.25)
 
@@ -701,7 +732,6 @@ class TelaResultadosUI(ctk.CTkFrame):
             self._registrar_fig(fig_spec, f"EspectroMedio_{modo_gen}", desc)
 
     def _setup_analise_sliding_ui(self):
-        # Widgets são filhos do frame de rolagem: self.scroll_sliding_analise
         for widget in self.scroll_sliding_analise.winfo_children(): widget.destroy()
 
         ctrl_pnl = ctk.CTkFrame(self.scroll_sliding_analise, fg_color=CORES["blush"])
